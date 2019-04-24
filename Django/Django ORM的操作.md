@@ -2,6 +2,9 @@
 
 # 一般操作
 
+`QuerySet`:可以返回多个值,里边有多个[定义类]object
+`定义类(表名) object`:可以使用类属性(表头)的方法来获取字段.例:BookInfo object.bname获取字段 
+
 ```
 <1> all():                 查询所有结果
  
