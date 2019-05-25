@@ -68,6 +68,9 @@ pip install virtualenvwrapper-win
 
 ```
 (venv)c:\>
+mkvirtualenv xxx
+#创建
+
 ```
 
 ### 4.3列出所有虚拟环境

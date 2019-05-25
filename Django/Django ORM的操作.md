@@ -1,4 +1,4 @@
-## Django ORM那些相关操作
+## .Django ORM那些相关操作
 
 # 一般操作
 
@@ -31,6 +31,8 @@
 <12> last():               返回最后一条记录
  
 <13> exists():             如果QuerySet包含数据，就返回True，否则返回False
+
+<14> name__contains():	   模糊搜索
 ```
 
 ### **返回QuerySet对象的方法有**
