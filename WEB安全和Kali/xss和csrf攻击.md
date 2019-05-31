@@ -1,7 +1,5 @@
 # 总结 XSS 与 CSRF 两种跨站攻击
 
-转自：https://blog.tonyseek.com/post/introduce-to-xss-and-csrf/
-
 > XSS：跨站脚本（Cross-site scripting）
 > 
 > CSRF：跨站请求伪造（Cross-site request forgery）
@@ -22,7 +20,7 @@ while (true) {
 ```
 
 
- 
+
 
 也可以是盗号或者其他未授权的操作——我们来模拟一下这个过程，先建立一个用来收集信息的服务器：
 
