@@ -56,7 +56,7 @@ class BookSerialzier(serializers.Serializer):
 
 - 额外内容：
 
-  1. 关系属性字段查找：
+  1. 关系属性字段查找：（关系属性统一加上many=True和read_only=True）
 
     ```python
   # 1. 返回关联属性对应id
@@ -144,7 +144,7 @@ class BookModelSerialzier(serializers.ModelSerializer):
      2.3 read_only()验证
 
      ```python
-     read_only = ('bcomment')
+     read_only_fields=('btitle',)
      ```
 
      2.4 使用自定义函数添加验证
@@ -162,11 +162,7 @@ class BookModelSerialzier(serializers.ModelSerializer):
 >
 > 自定义验证方法也可以在序列化器中重写，也就是说，除了create和update其他函数会被当作验证方法调用
 >
-> 
-
-
-
-
+> 将方法函数写serializer中，一旦返回为空，会导致数据无法保存
 
 
 
@@ -458,7 +454,7 @@ class BookDRFView(GenericAPIView,UpdateModelMixin,DestroyModelMixin,RetrieveMode
 
 - 功能特化的扩展类，他们是genericAPIView的子类
 
-- 使用方法和扩展类一样，而且他们不需要重写方法，实际使用中可以更具扩展类转换使用
+- 使用方法和扩展类一样，而且他们不需要重写方法，实际使用中可以根据扩展类转换使用
 
 ```python
 class CreateAPIView(mixins.CreateModelMixin,GenericAPIView):
@@ -488,11 +484,15 @@ class RetrieveUpdateDestroyAPIView  # 查询pk
 
 
 
-
-
-
-
 ### 12. 模型类视图集 ModelViewSet
+
+- 基本模式
+
+  ```python
+  class BooksDRF(ModelViewSet):
+      queryset = BookInfo.objects.all()  # 指定当前类视图使用的查询集数据
+      serializer_class = BookSerialzier  # 指定当前类视图使用的序列化器
+  ```
 
 - 可以自动生成路由
 
@@ -504,22 +504,96 @@ class RetrieveUpdateDestroyAPIView  # 查询pk
 
 - 可以自定义视图函数的名字
 
+  ```python
+  # 自定义的功能函数需要在路由中指明对应的请求方式
+  url(r'^books_drf/$', viewset.Books.as_view({'get': 'list', 'post': 'create'})),
+  ```
+
+- 可以自定义功能函数
+
+  ```python
+  @action(methods=['get'], detail=True)
+  def lastdata(self, request, pk):
+      """自定义视图集如果要自动生成路由，需要使用action装饰器，参数为请求方式和额外请求参数"""
+      book = self.get_object()
+      ser = self.get_serializer(book)
+      return Response(ser.data)
+  ```
+
+  ```python
+  # url(r'^books_drf/(?P<pk>\d+)/lastdata/$', viewset.BookDRFView.as_view({'get': 'lastdata'})),
+  ```
+
+  > 只有视图集ViewSet和他的子类可以自定义功能，因为扩展类一系全部继承自View，它的功能函数名字是固定为get, post, put, delete等。即使被封装过也只能是list, create, update, retreve, destory，不能自定义。
+
+- 支持使用多个序列化器
+
+  ```python
+  # 根据不同的请求选择不同的序列化器
+  def get_serializer_class(self):
+      if self.action == 'lastdata':
+          return BookSerialzier  # 选择序列化器1
+      elif self.action == 'create':
+          return BookSerialzier  # 选择序列化器2
+      else:
+          return BookSerialzier  # 选择序列化器3
+  ```
+
+  > genericAPIView同样可以指定多个序列化器，`get_seralizer_class()`方法来自鱼GenericView
+  >
+  > 除了重写`get_seralizer_class()`函数以外同样可以使用列表的形式传递序列化器
+
+
+
+### 13. 只读视图集 ReadOnlyModelViewSet
+
+- 继承自 RetrieveModelMixin 和 ListModelMixin ，可以完成单一和多个对象的查询
+
+- 扩展类的子类中是没有相应的子类的。
+
+  > 不可以使用一个视图同时继承ListAPIView和RetrieveAPIView，他们需要不同的路由参数
+  >
+  > 不可以写两个路由通入该视图中，因为as_view()函数通过请求方式判断调用函数，如果一个视图中有两个get方法的回调函数，视图将报错。
 
 
 
 
 
+**综上所诉，我们在实际DRF开发中常用的视图有：**
+
+**APIView,**  -  纯手写，支持复杂的功能
+
+**ModelMixin, ChildModelMixin**  - （按pk）增删改查其中一个或多个功能
+
+**ModelViewSet**   - （按pk）增删改查全部的功能，还可以自定义功能
+
+ReadOnlyModelViewSet  -   （使用自动生成的路由）一个视图中完成单个和多个对象的展示，可以自定义功能
+
+>视图类系列只能使用pk查表，要使用其他字段查询，需要重写genericAPIView，或者手写APIView；
+>
+>视图类的功能函数是固定的，如果要自定义，需要使用ViewSet视图集；
 
 
 
+使用**ModelMixin, ChildModelMixin, ModelViewSet** 基本代码都只有三行
+
+1）定义视图类：`class BooksDRF(ModelViewSet):`
+2）指定查询集：`queryset = BookInfo.objects.all()` 
+3）指定序列化器：` serializer_class = BookSerialzier` 
+
+> 项目中实际上还有指定权限验证 和 指定分页器， 一共五行。
+>
+> 其他在视图类中定义的函数都是对功能函数的重写，只有视图集支持自定义功能。
 
 
 
-综上所诉，我们在实际DRF开发中常用的视图有：
+使用**ModelSerializer**代码一共只有三行：
 
-APIView,  -  纯手写，功能复杂
+1）定义序列化器：`class BookModelSerialzier(serializers.ModelSerializer):`
+   				 `class Meta:`
+2）指定模型类：	        `model = BookInfo`  
 
-ModelMixin, ChildModelMixin 
+3）指定查询字段：	    `field = ('btitle', 'bread') # field = ("__all__")`
 
-ModelViewSet
+> 序列化器只能有create()和update()是对功能函数的重写，其他的函数都是验证函数。
 
