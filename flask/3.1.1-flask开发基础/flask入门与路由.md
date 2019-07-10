@@ -50,63 +50,230 @@ flask流行的主要原因：
 
 运行：python hello.py
 
-#### 3.1 初始化
+### 4. 初始化参数
 
-	from flask import Flask
-	
-	app = Flask(__name__)
+```python
+from flask import Flask
 
-Flask类构造函数唯一需要的参数就是应用程序的主模块或包。对于大多数应用程序，Python的\_\_name\_\_变量就是那个正确的、你需要传递的值。Flask使用这个参数来确定应用程序的根目录，这样以后可以相对这个路径来找到资源文件。
+app = Flask(__name__)
+```
 
-#### 3.2 路由
+* import_name
+  * Flask程序所在包(模块)的位置,传`__name__`
+* static_url_path 
+  * 静态资源访问路径,默认为`/+static/+静态资源文件名`
+* static_folder
+  * 静态文件存放路径,如果为默认的话将在当前(与`__name__`有关)执行文件下的`static`目录
+* templat_folder
+  * 模板文件储存的文件夹,可以不传,默认为执行文件下的`templates`文件夹
 
-	@app.route('/')
+```python
+from flask import Flask
 
-客户端例如web浏览器发送 请求 给web服务，进而将它们发送给Flask应用程序实例。应用程序实例需要知道对于各个URL请求需要运行哪些代码，所以它给Python函数建立了一个URLs映射。这些在URL和函数之间建立联系的操作被称之为 路由 。
-
-在Flask应程序中定义路由的最便捷的方式是通过显示定义在应用程序实例之上的app.route装饰器，注册被装饰的函数来作为一个 <b>路由</b>。
-
-#### 3.3 视图函数
-
-在上一个示例给应用程序的根URL注册gello_world()函数作为事件的处理程序。如果这个应用程序被部署在服务器上并绑定了 www.example.com 域名，然后在你的浏览器地址栏中输入 http://www.example.com 将触发gello_world()来运行服务。客户端接收到的这个函数的返回值被称为 响应 。如果客户端是web浏览器，响应则是显示给用户的文档。
-
-类似于gello_world()的函数被称作 <b>视图函数</b> 。
-
-#### 3.4 动态名称组件路由
-你的Facebook个人信息页的URL是 http://www.facebook.com/<username> ，所以你的用户名是它的一部分。Flask在路由装饰器中使用特殊的语法支持这些类型的URLs。下面的示例定义了一个拥有动态名称组件的路由：
-
-	@app.route('/hello/<name>')
-	
-	def gello_world(name):
-
- 		return 'Hello World %s' % name
-
-用尖括号括起来的部分是动态的部分，所以任何URLs匹配到静态部分都将映射到这个路由。当视图函数被调用，Flask发送动态组件作为一个参数。在前面的示例的视图函数中，这个参数是用于生成一个个性的问候作为响应。
-
-在路由中动态组件默认为字符串，但是可以定义为其他类型。例如，路由/user/<int:id>只匹配有一个整数在id动态段的URLs。Flask路由支持int、float
-
-如下：
-
-	@app.route('/hello/<int:id>')
-	
-	def gello_stu_id(id):
-	
-	  return 'Hello World id: %s' % id
+app = Flask(__name__,static_url_path='/ss',static_folder='ss',template_folder='aa')
 
 
-#### 3.5 服务启动
+@app.route('/')
+def index():
+    return 'hello flask'
 
-	if __name__ == '__main__':
-	
-		app.run()
+if __name__ == '__main__':
+    app.run()
+
+```
+
+> 目录结构
+
+```
+----
+  |---aa
+  |		|---1.html
+  |---ss
+  |     |--- a.png
+  |---helloworld.py
+```
+
+> 访问 127.0.0.1:5000/ss/a.png 则可以看见a.png
+
+
+
+### 5. Flask程序的配置参数
+
+**Flask将配置信息保存到了app.config属性中，该属性可以按照字典类型进行操作。**
+
+#### 读取
+
+- `app.config.get(name)`
+- `app.config[name]`
+
+#### 设置
+
+* 配置对象加载
+
+  * 定义一个普通的类
+
+  * app.config.from_object(定义配置信息类的名字)
+    
+    ```python
+    class DefaultConfig(object):
+        """默认配置"""
+        SECRET_KEY = 'TPmi4aLWRbyVq8zu9v82dWYW1'
+    
+    app = Flask(__name__)
+    
+    app.config.from_object(DefaultConfig)
+    
+    @app.route("/")
+    def index():
+        return app.config['SECRET_KEY']
+    ```
+    
+    > 访问后展示了SECRET_KEY的值
+    
+  * 以类的方式存储,可以复用,也就是说针对于不同的配置信息可以采用多继承的方式来加载配置信息
+
+    ```python
+    from flask import Flask
+    
+    app = Flask(__name__,static_url_path='/ss',static_folder='ss',template_folder='aa')
+    
+    class K(object):
+        SECRET_KEY = 'TPmi4aLWRbyVq8zu9v82dWYW1'
+        REDIS_URL = '127.0.0.1:3666'
+        MYSQL_URL = '127.0.0.1:3306'
+    
+    class K2(K):
+        MYSQL_URL = '192.168.0.55:8809'
+        SECRET_KEY = 'ASDfgwer658965tyERTY2145TYU7uhgcf9852'
+    
+    app.config.from_object(K2)
+    
+    @app.route('/')
+    def index():
+        return app.config.get('SECRET_KEY')
+    
+    if __name__ == '__main__':
+        app.run()
+    ```
+
+    > 访问后展示了 K2类中的配置信息.
+
+  * 缺点
+
+    * 暴漏了敏感的配置信息
+
+* 从配置文件中加载
+
+  * 单独的配置文件
+
+    ```python
+    SECRET_KEY = 'TPmi4aLWRbyVq8zu9v82dWYW1'
+    REDIS_URL = '127.0.0.1:3666'
+    # 以变量赋值方式来进行编写就好
+    ```
+
+  * app.config.from_pyfile(配置文件)
+
+    ```python
+    from flask import Flask
+    
+    app = Flask(__name__)
+    app.config.from_pyfile('setting.py')
+    
+    @app.route('/')
+    def index():
+        return app.config.get('SECRET_KEY')
+    
+    if __name__ == '__main__':
+        app.run()
+    ```
+
+    > 访问后也可以展示配置信息
+
+  * 优点 : 一定程度保证配置文件的安全
+
+  * 缺点 :  仍然不够安全 而且配置文件的文件名固定
+
+* 从环境变量中加载
+
+  * 通过环境变量值找到配置文件,环境变量的值为配置文件的绝对路径
+
+    ```
+    export PROJECT_SETTING='~/setting.py'
+    ```
+
+  * app.config.from_envvar('环境变量名')
+
+    ```python
+    from flask import Flask
+    
+    app = Flask(__name__)
+    
+    app.config.from_envvar('PROJECT_SETTING', silent=True)
+    # True 表示当环境变量不存在时将不给予理睬,程序继续执行
+    
+    @app.route("/")
+    def index():
+        return app.config['SECRET_KEY']
+    ```
+
+    > 访问可以看见配置信息
+
+  * 优点: 安全性更高;环境变量名字和值不用固定
+
+  * 缺点: 使用特别麻烦
+
+  * silent 没有设置相应值时是否抛出异常
+
+    * False 表示不安静的处理，没有值时报错通知，默认为False
+    * True 表示安静的处理，即时没有值也让Flask正常的运行下去
+
+* 使用工厂模式创建Flask app，并结合使用配置对象与环境变量加载配置
+
+  ```python
+  from flask import Flask
+  
+  def create_flask_app(config):
+      """
+      创建Flask应用
+      :param config: 配置对象
+      :return: Flask应用
+      """
+      app = Flask(__name__)
+      app.config.from_object(config)
+  
+      # 从环境变量指向的配置文件中读取的配置信息会覆盖掉从配置对象中加载的同名参数
+      app.config.from_envvar("PROJECT_SETTING", silent=True)
+      return app
+  
+  class DefaultConfig(object):
+      """默认配置"""
+      SECRET_KEY = 'itcast1'
+  
+  class DevelopmentConfig(DefaultConfig):
+      DEBUG=True
+  
+  # app = create_flask_app(DefaultConfig)
+  app = create_flask_app(DevelopmentConfig)
+  
+  @app.route("/")
+  def index():
+      print(app.config['SECRET_KEY'])
+      return "hello world"
+  ```
+
+### 6.服务启动
+
+```python
+if __name__ == '__main__':
+	app.run(host="0.0.0.0", port=5000, debug = True)
+```
 
 注意： \_\_name\_\_ == '\_\_main\_\_'在此处使用是用于确保web服务已经启动当脚本被立即执行。当脚本被另一个脚本导入，它被看做父脚本将启动不同的服务，所以app.run()调用会被跳过。
 
 一旦服务启动，它将进入循环等待请求并为之服务。这个循环持续到应用程序停止，例如通过按下Ctrl-C。
 
-有几个选项参数可以给app.run()配置web服务的操作模式。在开发期间，可以很方便的开启debug模式，将激活 debugger 和 reloader 。这样做是通过传递debug为True来实现的。
-
-run()中参数有如下：
+**参数有如下**：
 
 	debug 是否开启调试模式，开启后修改python的代码会自动重启
 	
@@ -114,116 +281,104 @@ run()中参数有如下：
 	
 	host主机，默认是127.0.0.1
 
+在1.0版本之后，Flask调整了开发服务器的启动方式，由代码编写`app.run()`语句调整为命令`flask run`启动。 
 
-### 4. 修改启动方式，使用命令行参数启动服务
+* 终端启动
 
-#### 4.1 安装插件
+  ```$ export FLASK_APP=helloworld  # 指定运行的是那个flask的程序
 
+  $ flask run
 
-	pip install flask-script
-
-调整代码
-	manager = Manager(app=‘自定义的flask对象’)
-
-启动的地方
-	manager.run()
-
-#### 4.2 启动命令
-
-	python hellow.py runserver -h 地址 -p 端口 -d -r
-
-其中：-h表示地址。-p表示端口。-d表示debug模式。-r表示自动重启
+   * Running on http://127.0.0.1:5000/
+  ```
 
 
-### 5. route规则
+  - `flask run -h 0.0.0.0 -p 8000` 绑定地址 端口
 
-#### 5.1 规则
+  - `flask run --help` 获取帮助
 
-写法：<converter:variable_name>
+  - 生产模式与开发模式的控制
 
-converter类型：
+    通过`FLASK_ENV`环境变量指明
 
-	string 字符串
-	int 整形
-	float 浮点型
-	path 接受路径，接收的时候是str，/也当做字符串的一个字符
-	uuid 只接受uuid字符串
-	any 可以同时指定多种路径，进行限定
-
-例子：
-
-	@app.route('/helloint/<int:id>/')
-	
-	@app.route('/getfloat/<float:price>/')
-	
-	@app.route('/getstr/<string:name>/'，methods=['GET', 'POST'])
-	
-	@app.route('/getpath/<path:url_path>/')
-	
-	@app.route('/getbyuuid/<uuid:uu>/'，methods=['GET', 'POST'])
-
-实现对应的视图函数：
-
-	@blue.route('/hello/<name>/')
-	def hello_man(name):
-	    print(type(name))
-	    return 'hello name:%s type:%s' % (name, type(name))
-	
-	@blue.route('/helloint/<int:id>/')
-	def hello_int(id):
-	    print(id)
-	    print(type(id))
-	    return 'hello int: %s' % (id)
-	
-	@blue.route('/index/')
-	def index():
-	    return render_template('hello.html')
-	
-	@blue.route('/getfloat/<float:price>/')
-	def hello_float(price):
-	
-	    return 'float: %s' % price
-	
-	@blue.route('/getstr/<string:name>/')
-	def hello_name(name):
-	
-	    return 'hello name: %s' % name
-	
-	@blue.route('/getpath/<path:url_path>/')
-	def hello_path(url_path):
-	
-	    return 'path: %s' % url_path
-	
-	@blue.route('/getuuid/')
-	def gello_get_uuid():
-	    a = uuid.uuid4()
-	    return str(a)
-	
-	@blue.route('/getbyuuid/<uuid:uu>/')
-	def hello_uuid(uu):
-	
-	    return 'uu:%s' % uu
+    - `export FLASK_ENV=production` 运行在生产模式，未指明则默认为此方式
+    - `export FLASK_ENV=development`运行在开发模式
 
 
-#### 5.2 methods请求方法
+### 7.路由与视图
 
-常用的请求类型有如下几种
+#### 查询路由信息
 
-	GET : 获取
-	POST : 创建
-	PUT : 修改(全部属性都修改)
-	DELETE : 删除
-	PATCH : 修改(修改部分属性)
+1. flask routes #查看flask 的路由信息,同样需要配置环境变量,来告诉查看哪个flask程序
+2. 在flask内部查看路由信息
+```python
+print(app.url_map)# 此种方式,回多出来两个两个默认的请求方式 options,head
 
-定义url的请求类型:
+for rule in app.url_map.iter_rules():
+    print('name={} path={}'.format(rule.endpoint, rule.rule)) 
 
-	@blue.route('/getrequest/', methods=['GET', 'POST'])
+```
+
+#### 设置请求方式
+
+- GET
+- OPTIONS(自带)
+- HEAD(自带)
+
+通过methods=[] 指明允许的请求方式
+
+```python
+@app.route("/itcast1", methods=["POST"])
+def view_func_1():
+    return "hello world 1"
+
+@app.route("/itcast2", methods=["GET", "POST"])
+def view_func_2():
+    return "hello world 2"
+```
 
 
 
-​	
+如果以不支持的请求方式访问 flask  返回405  method not allowed-
 
-​	
+**get方式访问**
 
+```http
+GET  /
 
+HTTP/1.1 200 OK
+Content-Type: application/json
+..
+\r\n\r\n
+'helloword'
+```
+
+**head方式访问**
+
+HEAD -> 等同于GET请求方式，但是仅返回GET方式中 应该返回的响应状态码和响应头，不会返回响应体
+
+```http
+HEAD /
+
+HTTP/1.1 200 OK
+Content-Type: application/json
+```
+
+**option**
+
+OPTIONS -> 询问服务器关于接口的访问信息
+
+```http
+options /  
+返回举例： 支持的请求方式 支持的访问域名等
+```
+
+CORS 解决跨域问题 利用了options请求
+
+django-cors扩展 django flask 或者其他扩展 解决思路
+
+1. 编写中间件，在中间件中拦截处理options
+2. 判断请求方式是否是options，如果不是opitons，不做处理，进入视图执行，否则，按照下面的流程处理
+3. 从options请求中取出访问域名，与白名单中的允许域名对比，
+4. 如果在白名单中，则返回允许跨域访问，否则返回不允许
 

@@ -6,92 +6,109 @@
 
 在Flask项目中可以用Blueprint(蓝图)实现模块化的应用，使用蓝图可以让应用层次更清晰，开发者更容易去维护和开发项目。蓝图将作用于相同的URL前缀的请求地址，将具有相同前缀的请求都放在一个模块中，这样查找问题，一看路由就很快的可以找到对应的视图，并解决问题了。
 
-### 2. 使用蓝图
+### 2.单一文件形式的蓝图
 
-#### 2.1 安装
+#### 2.1创建蓝图对象
 
-	pip install flask_blueprint
+```python
+from flask import Blueprint
 
-#### 2.2 实例化蓝图应用
+user_bp = Blueprint('user',__name__)
+```
 
-	blue = Blueprint(‘first’，\_\_name\_\_)
+#### 2.2编写蓝图视图
 
-注意：Blueprint中传入了两个参数，第一个是蓝图的名称，第二个是蓝图所在的包或模块，\_\_name\_\_代表当前模块名或者包名
+```python
+@user_bp.route('/login')
+def login():
+    return 'login page'
+```
 
-#### 2.3 注册
+#### 2.3.注册蓝图(主程序)
 
-	app = Flask(\_\_name\_\_)
-	
-	app.register_blueprint(blue, url_prefix='/user')
+```python
+from flask import Flask
+from user import user_bp
 
-注意：第一个参数即我们定义初始化定义的蓝图对象，第二个参数url_prefix表示该蓝图下，所有的url请求必须以/user开始。这样对一个模块的url可以很好的进行统一管理
+app = Flask(__name__)
 
-#### 3 使用蓝图
+app.register_blueprint(user_bp) # 注册蓝图对象
 
-修改视图上的装饰器，修改为@blue.router(‘/’)
+@app.route('/')
+def index():
+    return 'hello'
+```
 
-	@blue.route('/', methods=['GET', 'POST'])
-	def hello():
-	    # 视图函数
-	    return 'Hello World'
+### 3.目录方式定义蓝图
 
-注意：该方法对应的url为127.0.0.1:5000/user/
+> 目录结构
+
+```
+  |------ main.py # 启动文件
+  |------ user  #用户蓝图 (文件内蓝图)
+  |  |--- __init__.py  # 此处创建蓝图对象(包蓝图)
+  |  |--- passport.py  
+  |  |--- profile.py
+  |  |--- ...
+```
+
+```python
+#  main.py
+from flask import Flask
+from user import user_bp
+from news import news_bp
+
+app = Flask(__name__)
+
+app.register_blueprint(user_bp) # 注册蓝图对象
+app.register_blueprint(news_bp)
+
+@app.route('/')
+def index():
+    return 'hello'
+```
+
+```python
+#  __init__.py
+from flask import Blueprint
+
+news_bp = Blueprint('news',__name__)
+from . import passport  #如果不在此处导入 那么主程序将找不到目录的蓝图文件,如果在之前导入(位置不对)则会发生循环导入的问题.
+```
+
+```python
+#  passport.py
+from . import new_bp
+
+@new_bp.route('/get_passport')
+def passport()
+	return 'get passport'
+```
 
 
 
-#### 4 url_for反向解析
+### 4.蓝图扩展
 
-##### 后端中使用反向解析:
+* 通过`url-prefix`指定蓝图前缀
 
-语法:
-	
-	无参情况: url_for('蓝图中定义的第一个参数.函数名')
-	有参情况: url_for('蓝图中定义的第一个参数.函数名', 参数名=value)
+  ```
+  app.register_blueprint(user_bp, url_prefix='/user')
+  app.register_blueprint(goods_bp, url_prefix='/goods')
+  ```
 
-定义跳转：
+* 蓝图内部静态文件
 
-	from flask import url_for, redirect
-	# 第一步: 生成蓝图对象
-	blueprint = Blueprint('first', __name__)
+  和应用对象不同，蓝图对象创建时不会默认注册静态目录的路由。需要我们在 创建时指定 static_folder 参数。
 
+  ```
+  admin = Blueprint("admin",__name__,static_folder='static_admin')
+  admin = Blueprint("admin",__name__,static_folder='static_admin',static_url_path='/lib')
+  ```
 
-​	
-	@blueprint.route('/')
-	def hello():
-	    return 'hello'
+* 蓝图模板目录
 
+  蓝图对象默认的模板目录为系统的模版目录，可以在创建蓝图对象时使用 template_folder 关键字参数设置模板目录
 
-​	
-	@blueprint.route('/stu/<id>/')
-	def stu(id):
-	    return 'hello stu: %s' % id
-
-
-​	
-	# 1. 定义路由跳转到hello方法
-	@blueprint.route('/redirect/')
-	def my_redirect():
-		# 第一种方法
-	    # redirect: 跳转
-	    # url_for: 反向解析
-	    # 'first.hello': 蓝图第一个参数.跳转到的函数名
-	    return redirect(url_for('first.hello'))
-		# 第二种方法
-	    return redirect('/hello/index/')
-		
-	# 2. 定义路由跳转到stu方法
-	@blueprint.route('/redirect_id/')
-	def stu_redirect():
-	    return redirect(url_for('first.stu', id=3))
-
-注意: 反向解析可以使用url_for方法，也可以直接定义跳转的路由地址。
-	
-		
-
-##### 前端中使用反向解析
-
-语法:
-
-	无参形式: {{ url_for('蓝图中定义的第一个参数.函数名') }}
-	
-	有参形式: {{ url_for('蓝图中定义的第一个参数.函数名'，参数名=value) }}
+  ```python
+  admin = Blueprint('admin',__name__,template_folder='my_templates')
+  ```
