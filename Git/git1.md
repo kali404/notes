@@ -1,11 +1,6 @@
 
 # GIT使用指南
 
->Auth: 王海飞
->Data：2018-03-19
->Email：779598160@qq.com
->github：https://github.com/coco369/knowledge
-
 ---
 
 
@@ -40,7 +35,7 @@ master(线上分支)，dev(开发环境分支)，test(测试分支)，wanghaifei
     该图说明
     <br>
     ![图](images/repository.jpg)
-
+    
     那提交怎么从本地到缓存区以及最后到远程的分支上的呢：
     1. 首先第一步git add其实就是讲我们本地修改了的代码提交到缓存区中
     2. 第二部git commit就是讲我们缓存区中的代码提交到本地分支中，并清空缓存区域
@@ -64,19 +59,19 @@ master(线上分支)，dev(开发环境分支)，test(测试分支)，wanghaifei
  <br>
  ![图](images/ssh.png)
  <br>
- ***
+***
  b) 进入ssh文件，生成秘钥
  ![图](images/ssh-keygen.png)
  <br>
  在命令执行中连续敲三次回车即可。
  <br> <br>
- ***
+***
  c) 配置git中ssh秘钥
  首先：先查看ssh文件夹的结构，打开id_rsa.pub，并复制其中的信息
  <br> <br>
  ![图](images/ssh-rsa-pub.png)
  <br> <br>
- ***
+***
  其次：打开github，点击setting然后配置ssh秘钥
  <br>
  <br>

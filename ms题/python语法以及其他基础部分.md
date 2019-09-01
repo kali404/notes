@@ -65,21 +65,39 @@
 
    >  是对函数的一种包装。它能使函数的功能得到扩充，而同时不用修改函数本身的代码。它能够增加函数执行前、执行后的行为，而不需对调用函数的代码做任何改变。
    >
-   > ```python
-   > def a(func):
-   > 	print(1)
-   > 	def b():
-   >         print(1)
-   > 		func()
-   > 		print(3)
-   > 	return b
-   > @a
-   > def c():
-   > 	print(4)
-   > c()
-   > ```
+   >  ```python
+   >  # 装饰器
+   >  def a(func):
+   >  	print(1)
+   >  	def b():
+   >       print(1)
+   >  		func()
+   >  		print(3)
+   >  	return b
+   >  @a
+   >  def c():
+   >  	print(4)
+   >  c()
+   >  ```
    >
-   > 
+   >  ```python
+   >  # 装饰器工厂
+   >  def func1(flag):
+   >      def func2(func):
+   >          def func3(a,b):
+   >              print(flag)
+   >              func(a,b)
+   >          return func3
+   >      return func2
+   >  
+   >  @func1('a')
+   >  def a(a,b):
+   >      print(a,b)
+   >  
+   >  a(1,2)
+   >  ```
+   >
+   >  
 
 8. 手写个使用装饰器实现的单例模式； 
 
@@ -115,11 +133,131 @@
 
 9. 使用装饰器的单例和使用其他方法的单例，在后续使用中，有何区别； 
 
+   > **单例模式（Singleton Pattern）**是一种常用的软件设计模式，该模式的主要目的是确保**某一个类只有一个实例存在**。当你希望在整个系统中，某个类只能出现一个实例时，单例对象就能派上用场。
+   >
+   > **方法:**
+   >
+   > **使用模块**
+   >
+   > **Python 的模块就是天然的单例模式**，因为模块在第一次导入时，会生成 `.pyc` 文件，当第二次导入时，就会直接加载 `.pyc` 文件，而不会再次执行模块代码。
+   >
+   > **使用装饰器** 
+   >
+   > ```python
+   > def Singleton(cls):
+   >     _instance = {}
+   > 
+   >     def _singleton(*args, **kargs):
+   >         if cls not in _instance:
+   >             _instance[cls] = cls(*args, **kargs)
+   >         return _instance[cls]
+   >     return _singleton
+   > 
+   > @Singleton
+   > class A(object):
+   >     a = 1
+   >     def __init__(self, x=0):
+   >         self.x = x
+   > 
+   > a1 = A(2)
+   > a2 = A(3)
+   > ```
+   >
+   > **使用类**
+   >
+   > ```python
+   > import time
+   > import threading
+   > class Singleton(object):
+   >     _instance_lock = threading.Lock()
+   > 
+   >     def __init__(self):
+   >         time.sleep(1)
+   > 
+   >     @classmethod
+   >     def instance(cls, *args, **kwargs):
+   >         if not hasattr(Singleton, "_instance"):
+   >             with Singleton._instance_lock:
+   >                 if not hasattr(Singleton, "_instance"):
+   >                     Singleton._instance = Singleton(*args, **kwargs)
+   >         return Singleton._instance
+   > ```
+   >
+   > **基于`__new__`方法实现（推荐）**
+   >
+   > ```python
+   > import threading
+   > class Singleton(object):
+   >     _instance_lock = threading.Lock()
+   > 
+   >     def __init__(self):
+   >         pass
+   > 
+   > 
+   >     def __new__(cls, *args, **kwargs):
+   >         if not hasattr(Singleton, "_instance"):
+   >             with Singleton._instance_lock:
+   >                 if not hasattr(Singleton, "_instance"):
+   >                     Singleton._instance = object.__new__(cls)  
+   >         return Singleton._instance
+   > 
+   > obj1 = Singleton()
+   > obj2 = Singleton()
+   > ```
+   >
+   > **基于metaclass实现**
+   >
+   > ```python
+   > import threading
+   > 
+   > class SingletonType(type):
+   >     _instance_lock = threading.Lock()
+   >     def __call__(cls, *args, **kwargs):
+   >         if not hasattr(cls, "_instance"):
+   >             with SingletonType._instance_lock:
+   >                 if not hasattr(cls, "_instance"):
+   >                     cls._instance = super(SingletonType,cls).__call__(*args, **kwargs)
+   >         return cls._instance
+   > 
+   > class Foo(metaclass=SingletonType):
+   >     def __init__(self,name):
+   >         self.name = name
+   > 
+   > 
+   > obj1 = Foo('name')
+   > obj2 = Foo('name')
+   > print(obj1,obj2)
+   > ```
+   >
+   > 
+
 10. 手写：正则邮箱地址； 
 
     > ^[a-zA-Z0-9_-]+@[a-zA-Z0-9_-]+(\.[a-zA-Z0-9_-]+)+$
 
 11. 介绍下垃圾回收：引用计数/分代回收/孤立引用环； 
+
+    > 当一个对象的引用计数器归零时,它将被垃圾回收机制处理掉
+    >
+    > **引用计数（跟踪和回收垃圾）**
+    >
+    > 1. 可通过sys包中的getrefcount(引用名)来查看某个对象的引用计数
+    > 2. 当将某个引用作为实参传递给getrefcount（）时，参数实际上创建了一个临时的引用。因此，引用计数结果比实际值多1
+    > 3. 对于python的容器（container）对象，如：列表、字典等，其内部包含的并不是对象，而是对象的引用。
+    > 4. 词典对象用于记录所有全局变量的引用。可通过内置函数globals()查看该词典
+    > 5. 容器对象的引用可能会构成很复杂的拓扑结构。可通过objgraph包中的show_refs（）函数来进行查看
+    > 6. objgraph包的安装（windows）：pip install xdot   /   pip install objgraph
+    >
+    >  **分代回收（以空间换时间进一步提高垃圾回收效率）**
+    >
+    > 1. python同时采用分代回收策略。该策略假设：存活时间越久的对象，越不可能在后边的程序当中编程垃圾。
+    > 2. python将所有对象分为0， 1， 2三代对象。
+    > 3. 所有的新建对象都是0代对象。当某一代对象经历过垃圾回收，依然存活，那么它就被归入下一代对象。垃圾回收启动时，一定会扫描所有的0代对象。如果0代经过一定次数垃圾回收，那么就启动对0代和1代的扫描清理。当1代也经历了一定次数的垃圾回收后，那么会启动对0，1，2，即对所有对象进行扫描
+    >
+    > **孤立的引用环**
+    >      两个表对象，互相引用对方构成一个引用环。删除了a，b引用之后，这两个对象不可能再从程序中调用，就没有什么用处了。但是由于引用环的存在，这两个对象的引用计数都没有降到0，不会被垃圾回收。
+    > 	为了回收这样的引用环，Python复制每个对象的引用计数，可以记为gc_ref。假设，每个对象i，该计数为gc_ref_i。Python会遍历所有的对象i。对于每个对象i引用的对象j，将相应的gc_ref_j减1。
+    > 	遍历后，gc_ref不为0的对象，和这些对象引用的对象，以及继续更下游引用的对象，需要被保留。而其它的对象则被垃圾回收。
 
 12. 多进程与多线程的区别；CPU密集型适合用什么； 
 
@@ -128,17 +266,15 @@
     >一个程序的执行实例就是一个**进程**。每一个进程提供执行程序所需的所有资源。（进程本质上是资源的集合）一个进程有一个虚拟的地址空间、可执行的代码、操作系统的接口、安全的上下文（记录启动该进程的用户和权限等等）、唯一的进程ID、环境变量、优先级类、最小和最大的工作空间（内存空间），还要有至少一个线程。每一个进程启动时都会最先产生一个线程，即主线程。然后主线程会再创建其他的子线程。
     >
     >```
-    >1.同一个进程中的线程共享同一内存空间，但是进程之间是独立的。
-    >2.同一个进程中的所有线程的数据是共享的（进程通讯），进程之间的数据是独立的。
-    >3.对主线程的修改可能会影响其他线程的行为，但是父进程的修改（除了删除以外）不会影响其他子进程。
-    >4.线程是一个上下文的执行指令，而进程则是与运算相关的一簇资源。
-    >5.同一个进程的线程之间可以直接通信，但是进程之间的交流需要借助中间代理来实现。
-    >6.创建新的线程很容易，但是创建新的进程需要对父进程做一次复制。
-    >7.一个线程可以操作同一进程的其他线程，但是进程只能操作其子进程。
-    >8.线程启动速度快，进程启动速度慢（但是两者运行速度没有可比性）。
+    >同一个进程中的线程共享同一内存空间，但是进程之间是独立的。
+    >同一个进程中的所有线程的数据是共享的（进程通讯），进程之间的数据是独立的。
+    >对主线程的修改可能会影响其他线程的行为，但是父进程的修改（除了删除以外）不会影响其他子进程。
+    >线程是一个上下文的执行指令，而进程则是与运算相关的一簇资源。
+    >同一个进程的线程之间可以直接通信，但是进程之间的交流需要借助中间代理来实现。
+    >创建新的线程很容易，但是创建新的进程需要对父进程做一次复制。
+    >一个线程可以操作同一进程的其他线程，但是进程只能操作其子进程。
+    >线程启动速度快，进程启动速度慢（但是两者运行速度没有可比性）。
     >```
-    >
-    >
     >
     >多进程适用于在cpu密集操作,浮点数运算
     >
@@ -170,15 +306,195 @@
 
 #### 算法排序部分
 
-1. 手写快排；堆排；几种常用排序的算法复杂度是多少；快排平均复杂度多少，最坏情况如何优化； 
-2. 手写：已知一个长度n的无序列表，元素均是数字，要求把所有间隔为d的组合找出来，你写的解法算法复杂度多少； 
-3. 手写：一个列表A=[A1，A2，…,An]，要求把列表中所有的组合情况打印出来； 
-4. 手写：用一行python写出1+2+3+…+10**8 ； 
-5. 手写python：用递归的方式判断字符串是否为回文； 
-6. 单向链表长度未知，如何判断其中是否有环； 
-7. 单向链表如何使用快速排序算法进行排序； 
-8. 手写：一个长度n的无序数字元素列表，如何求中位数，如何尽快的估算中位数，你的算法复杂度是多少； 
+1. 手写快排；堆排；几种常用排序的算法复杂度是多少；快排平均复杂度多少，最坏情况如何优化；(彪标)
+
+   ```python
+   def quick_sort(tlist,start,end):
+   
+       # 0. 规定递归的跳出条件
+       if start >= end:
+           return
+   
+       # 1. 初始化，确定基准pivot
+       leftPointer = start
+       rightPointer = end
+       pivot = tlist[start]
+   
+       # 2. 分区操作（partition）
+       while leftPointer < rightPointer:
+           while leftPointer < rightPointer and tlist[rightPointer] >= pivot:
+               rightPointer -= 1
+           tlist[leftPointer]=tlist[rightPointer]
+           while leftPointer < rightPointer and tlist[leftPointer] < pivot:
+               leftPointer += 1
+           tlist[rightPointer]=tlist[leftPointer]
+       tlist[rightPointer] = pivot
+       quick_sort(tlist,0,rightPointer-1)
+       quick_sort(tlist,rightPointer+1,end)
+   
+       return tlist
+   
+   
+   if __name__ == '__main__':
+       tlist = [7850, 76892, 49169, 44721, 51861, 66149, 18273, 94882, 63497, 8427, 65300, 20822, 15745, 12270, 31608, 38276, 36210, 21632, 33084, 61789]
+       print(quick_sort(tlist,0,len(tlist)-1))
+   ```
+   
+   ```python
+   # 冒泡
+   def bubble(context):
+       print("the old array is %s" % context)
+   
+       n = 1
+       while n < len(context):
+           for i in range(len(context)-1):
+               if context[i] > context[i + 1]:
+                   context[i], context[i + 1] = context[i + 1], context[i]
+           n += 1
+   
+       print("the new array is %s " % context)
+   
+
+   if __name__ == '__main__':
+       context = [18422, 15669, 9854, 12705, 18350, 19424, 9072, 14817, 11030, 16525]
+       bubble(context)
+   
+   ```
+   
+   
+   
+2. 手写：已知一个长度n的无序列表，元素均是数字，要求把所有间隔为d的组合找出来，你写的解法算法复杂度多少；（彪标）
+
+   ```python
+   def a(tlist, d):
+       for item in range(len(tlist)-1):
+           base = tlist[item]
+           for each in tlist:
+               if abs(base - each) == d:
+                   return base, each
+   
+   if __name__ == '__main__':
+       d = 6791
+       tlist = [18075, 11284, 18219, 8819, 9522, 12419, 9591, 15202, 13609, 10782]
+       print(a(tlist, d))
+   ```
+   
+3. 手写：一个列表A=[A1，A2，…,An]，要求把列表中所有的组合情况打印出来；
+
+   ```python
+   from itertools import combinations
+   li = []
+   l = [1, 2, 3, 4, 5]
+   for i in range(2,len(l)+1):
+       li.append(list(combinations(l, i)))
+   
+   print(li)
+   ```
+
+4. 手写：用一行python写出1+2+3+…+10**8 ；
+
+   ```python
+   ret = sum([i for i in range(10**8-1)])
+   ```
+
+5. 手写python：用递归的方式判断字符串是否为回文；
+
+   ```python
+   def is_palindrome(s):
+       if s =="":
+           return True
+       else:
+           if s[0]==s[-1]:
+               return is_palindrome(s[1:-1])
+           else:
+               return False
+   
+   # print(is_palindrome('1234321'))
+   # print(is_palindrome('1234121'))
+   ```
+
+6. 单向链表长度未知，如何判断其中是否有环；
+
+   ```PYTHON
+   class Node():  
+       def __init__(self, item=None):
+           self.item = item  // 数据域
+           self.next = None  // 指针域
+   
+   
+   // 判断是否为环结构并且查找环结构的入口节点
+   def findbeginofloop(head): 
+       // 默认环不存在，为False
+       loopExist = False  
+       // 如果头节点就是空的，那肯定就不存在环结构
+       if head == None:  
+           return "不是环结构"
+           
+       s = set()
+       while head.next:  
+           // 判断遍历的节点是否在set中 
+           if id(head) in s:
+               // 返回环入口
+               print("存在环结构")
+               return head.item
+           s.add(id(head))
+           head = head.next
+           
+       return "不是环结构"
+   
+   if __name__ == "__main__":
+       // 构建环
+       node1 = Node(1)
+       node2 = Node(2)
+       node3 = Node(3)
+       node4 = Node(4)
+       node5 = Node(5)
+       node1.next = node2
+       node2.next = node3
+       node3.next = node4
+       node4.next = node5
+       node5.next = node2
+       print(findbeginofloop(node1))
+   ```
+
+7. 单向链表如何使用快速排序算法进行排序；
+
+   
+
+8. 手写：一个长度n的无序数字元素列表，如何求中位数，如何尽快的估算中位数，你的算法复杂度是多少；(谁会用堆解决下）
+
+   ```python
+   def median(data):
+       '''先排序再取中位
+       下标为列表长度整除和整除取反的平均数'''
+       data.sort() # 可换排序算法,求时间复杂度
+       half = len(data) // 2
+       return (data[half] + data[~half])/2
+   if __name__ == '__main__':
+       print(median([1,4,2,3]))
+   ```
+
+   
+
 9. 如何遍历一个内部未知的文件夹（两种树的优先遍历方式）
+
+   ```python
+   import os
+   import os.path
+   rootdir = "" # 指明被遍历的文件夹
+   
+   for parent,dirnames,filenames in os.walk(rootdir):    #三个参数：分别返回1.父目录 2.所有文件夹名字（不含路径） 3.所有文件名字
+       for dirname in  dirnames:                       #输出文件夹信息
+           print "parent is:" + parent
+           print  "dirname is" + dirname
+   
+   　　for filename in filenames:                        #输出文件信息
+           print "parent is": + parent
+           print "filename is:" + filename
+           print "the full name of the file is:" + os.path.join(parent,filename) #输出文件路径信息
+   ```
+
+   
 
 #### 网络基础部分
 
@@ -516,7 +832,7 @@ kill -9 PID 杀死指定进程`
    >     Template(模版)：负责如何把页面展示给用户
    >     View(视图)：负责业务逻辑，并在适当的时候调用Model和Template
    >     此外，Django还有一个url分发器，它的作用是将一个个URL的页面请求分发给不同的view处理，view再调用相应的Model和Template
-   
+
 5. 缓存怎么用； 
 
   > 使用缓存的目的就是减少数据库访问次数降低数据库的压力和提升程序的响应时间
@@ -563,13 +879,8 @@ kill -9 PID 杀死指定进程`
 
 10. uWSGI和Nginx的作用； 
 
-    > 区别 nginx是对外的服务器，外部浏览器通过url访问nginx, uwsgi是对内的服务器，主要用来处理动态请求。
-
-> WSGI的全称是Web Server Gateway Interface（Web服务器网关接口），只是一种描述web服务器（如nginx，uWSGI等服务器）如何与web应用程序（如用Django、Flask框架写的程序）通信的规范、协议。 
-> uWSGI是一个全功能的HTTP服务器，实现了WSGI协议、uwsgi协议、http协议等。它要做的就是把HTTP协议转化成语言支持的网络协议。比如把HTTP协议转化成WSGI协议，让Python可以直接使用。
-> uWSGI是一个Web服务器，它实现了WSGI协议、uwsgi、http等协议
-> Nginx是一个Web服务器其中的HTTP服务器功能和uWSGI功能很类似，但是Nginx还可以用作更多用途，比如最常用的反向代理功能。
-> nginx的作用： 
-> 1.反向代理，可以拦截一些web攻击，保护后端的web服务器 
-> 2.负载均衡，根据轮询算法，分配请求到多节点web服务器 
-> 3.缓存静态资源，加快访问速度，释放web服务器的内存占用，专项专用
+    > WSGI（Python Web Server GateWay Interface）:它是用在 python web 框架编写的应用程序与后端服务器之间的规范让你写的应用程序可以与后端服务器顺利通信。在 WSGI 出现之前你不得不专门为某个后端服务器而写特定的 API，并且无法更换后端服务器， **WSGI 就是一种统一规范， 所有使用 WSGI 的服务器都可以运行使用 WSGI 规范的 web 框架，反之亦然。**
+    >
+    > uWSGI: 是一个Web服务器，它实现了WSGI协议、uwsgi、http等协议。用于接收前端服务器转发的动态请求并处理后发给 web 应用程序。
+    >
+    > uwsgi: 是uWSGI服务器实现的独有的协议， 网上没有明确的说明这个协议是用在哪里的，我个人认为它是用于前端服务器与 uwsgi 的通信规范，相当于 FastCGI的作用。当然这只是个人见解，我在知乎进行了相关提问，欢迎共同讨论。
