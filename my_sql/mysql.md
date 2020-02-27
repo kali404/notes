@@ -20,7 +20,7 @@ RDBMS即关系数据库管理系统(Relational Database Management System)的特
     4.许多的行和列组成一张表单
     5.若干的表单组成database
 
-##### RDBMS 术语
+#####  术语
 
 在我们开始学习MySQL 数据库前，让我们先了解下RDBMS的一些术语：
 
@@ -35,26 +35,7 @@ RDBMS即关系数据库管理系统(Relational Database Management System)的特
     索引：使用索引可快速访问数据库表中的特定信息。索引是对数据库表中一列或多列的值进行排序的一种结构。类似于书籍的目录。
     参照完整性: 参照的完整性要求关系中不允许引用不存在的实体。与实体完整性是关系模型必须满足的完整性约束条件，目的是保证数据的一致性。
 
-### window上Mysql安装
-
-下载安装地址[mysql地址](https://www.mysql.com/)
-
-
-### ubuntu上Mysql安装
-
-安装参数
-```
-MySQL - MySQL服务器。你需要该选项，除非你只想连接运行在另一台机器上的MySQL服务器。
-MySQL-client - MySQL 客户端程序，用于连接并操作Mysql服务器。
-```
-
-
-#### 1.安装mysql:
-```
-sudo apt-get install mysql mysql-client
-```
-
-#### 2.使用Mysql客户端进行连接Mysql的命令
+####1 .使用Mysql客户端进行连接Mysql的命令
 
 先使用mysql命令连接到mysql的服务器，输入安装的时候自己设置的密码
 ```
