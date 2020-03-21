@@ -1,4 +1,3 @@
-
 ### 77Django和Flask区别：
 
 #### 1. jiaji2和DjangoTemplates模板引擎相比，jiaja2语法更简单

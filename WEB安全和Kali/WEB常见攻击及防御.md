@@ -12,7 +12,7 @@ XSS 的原理是恶意攻击者往 Web 页面里插入恶意可执行网页脚�
 
 举一个例子，比如你的 Web 页面中包含有以下代码：
 
-```
+```html
 Select your language:
 <select>
     <script>

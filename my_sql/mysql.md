@@ -64,7 +64,7 @@ show databases;
 
 创建数据库的时候，需要指定编码charset=utf-8,要不然存储中文会出现乱码
 
-```
+```sql
 create database test charset=utf8;
 ```
 
